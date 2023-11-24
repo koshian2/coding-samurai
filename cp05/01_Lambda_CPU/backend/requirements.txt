@@ -1,0 +1,5 @@
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.1.0+cpu
+torchvision==0.16.0+cpu
+open-clip-torch==2.23.0
+transformers==4.35.0

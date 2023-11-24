@@ -1,0 +1,7 @@
+services:
+  gradio:
+    build: .
+    image: cp01_docker_sample
+    ports:
+      - "28574:8080"
+    tty: true

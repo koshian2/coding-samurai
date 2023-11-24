@@ -1,0 +1,40 @@
+services:
+  edoflow_backend_sagemaker:
+    build: backend_sagemaker
+    image: edoflow_sagemaker
+    ports:
+      - "9011:8080"
+    stdin_open: true
+    tty: true
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+  edoflow_backend_lambda:
+    build: backend_lambda
+    image: edoflow_lambda
+    ports:
+      - "9012:8080"
+    stdin_open: true
+    tty: true  
+    volumes:
+      - ~/.aws:/root/.aws
+    environment:
+      - AWS_PROFILE=develop
+  edoflow_frontend:
+    build: frontend
+    image: edoflow_frontend
+    ports:
+      - "9013:8080"
+    stdin_open: true
+    tty: true
+    volumes:
+      - ~/.aws:/root/.aws
+    environment:
+      - RUN_ENV=docker
+      - AWS_PROFILE=develop
+    extra_hosts:
+      - host.docker.internal:host-gateway

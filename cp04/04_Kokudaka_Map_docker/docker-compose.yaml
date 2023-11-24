@@ -1,0 +1,8 @@
+services:
+  kokudaka_map:
+    build: .
+    image: kokudaka_map
+    ports:
+      - "57842:80"
+    tty: true
+  

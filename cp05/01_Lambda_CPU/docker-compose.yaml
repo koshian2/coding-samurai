@@ -1,0 +1,22 @@
+services:
+  equip_backend:
+    build: backend
+    image: equip_backend
+    ports:
+      - "9001:8080"
+    stdin_open: true
+    tty: true
+  equip_frontend:
+    build: frontend
+    image: equip_frontend
+    ports:
+      - "9002:8080"
+    stdin_open: true
+    tty: true
+    volumes:
+      - ~/.aws:/root/.aws
+    environment:
+      - RUN_ENV=aws
+      - AWS_PROFILE=develop
+    extra_hosts:
+      - host.docker.internal:host-gateway

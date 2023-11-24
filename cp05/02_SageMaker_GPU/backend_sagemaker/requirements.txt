@@ -1,0 +1,6 @@
+onnxruntime-gpu==1.16.2
+decord==0.6.0
+numpy==1.24.4
+moviepy==1.0.3
+fastapi==0.104.1
+uvicorn==0.24.0

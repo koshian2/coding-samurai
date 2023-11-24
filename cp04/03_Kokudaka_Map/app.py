@@ -1,0 +1,81 @@
+import pandas as pd
+import streamlit as st
+import pydeck as pdk
+import numpy as np
+
+def select_category(df, pref_df, category_name):
+    if category_name != "全体":
+        filter_df = df.query("category == @category_name")
+    else:
+        filter_df = df
+    kokudaka = filter_df.groupby("pref_code")["kokudaka_1"].sum().astype(int)
+    pref_sub = pref_df[pref_df["pref_id"].isin(kokudaka.index)]
+    summary = pd.merge(pref_sub, kokudaka, left_on="pref_id", right_index=True)
+    scale = max(summary["kokudaka_1"].max()/100000, 4)
+    summary_styled = summary.style.format(precision=0, thousands=",", decimal=".")
+    return summary, summary_styled, scale
+
+def _get_zoom_level(distance):
+    # zoom levels : from 0 to 20
+    zoom_levels = 360 / (2**np.arange(21))
+    for i in range(len(zoom_levels)-1):
+        if zoom_levels[i+1] < distance <= zoom_levels[i]:
+            return i
+    return 12 # Default zoom level
+
+def get_map_components(df, scale):
+    center_lat = (df["lat"].max() + df["lat"].min()) / 2
+    center_lng = (df["lng"].max() + df["lng"].min()) / 2
+    range_lat = abs(df["lat"].max() - df["lat"].min())
+    range_lng = abs(df["lng"].max() - df["lng"].min())
+    longitude_distance = max(range_lat, range_lng)
+
+    return st.pydeck_chart(pdk.Deck(
+        map_style=None,
+        initial_view_state=pdk.ViewState(
+            latitude=center_lat,
+            longitude=center_lng,
+            zoom=_get_zoom_level(longitude_distance),
+            bearing=0, pitch=0
+        ),
+        layers=[
+            pdk.Layer(
+                "ScatterplotLayer",
+                df,
+                pickable=True,
+                opacity=0.5,
+                stroked=True,
+                filled=True,
+                radius_min_pixels=3,
+                line_width_min_pixels=1,
+                radius_scale=1/scale,
+                get_position="[lng, lat]",
+                get_radius="kokudaka_1",
+                get_fill_color=[200, 30, 0],
+                get_line_color=[0, 0, 0],
+            )
+        ],
+        tooltip={"text": "{pref} : {kokudaka_1}"}
+    ))
+
+
+def main():
+    kokudaka_df = pd.read_csv("kokudaka.csv")
+    kokudaka_df["pref_code"] = kokudaka_df["city_code"].astype(str).apply(
+        lambda x: int(x[:2]) if len(x) == 5 else int(x[:1])) # prefecture id
+    pref_df = pd.read_csv("pref.csv")
+
+    st.title("石高マップ")
+    category_name = st.selectbox("カテゴリーを選択",
+                                 ["全体"]+kokudaka_df["category"].unique().tolist())
+
+    if category_name:
+        summary, summary_styled, scale = select_category(kokudaka_df, pref_df, category_name)
+        map_component = get_map_components(summary, scale)
+        st.sidebar.dataframe(summary_styled, column_order=["pref", "kokudaka_1"], height=800, column_config={
+            "pref": st.column_config.TextColumn("現在の都道府県"),
+            "kokudaka_1": st.column_config.NumberColumn("旧高", format="%.0f")
+        })
+
+if __name__ == "__main__":
+    main()
